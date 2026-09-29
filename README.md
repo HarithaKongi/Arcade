@@ -1,4 +1,4 @@
-# Never-Existed Arcade
+# Arcade
 
 Original browser puzzle games in vanilla HTML, CSS and JavaScript. No dependencies, no build step.
 
@@ -7,7 +7,7 @@ Original browser puzzle games in vanilla HTML, CSS and JavaScript. No dependenci
 | [Tidebound](games/tidebound/) | Collect pearls while the sea rises one row every three moves. Random rounds. |
 | [Mirror Mole](games/mirror-mole/) | One key press moves two moles with mirrored sideways motion. Four levels verified solvable with a BFS solver. |
 
-Live site: `https://<your-username>.github.io/never-existed-arcade/`
+Live site: `https://HarithaKongi.github.io/never-existed-arcade/`
 
 ## Structure
 
