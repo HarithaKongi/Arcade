@@ -17,7 +17,7 @@ games/tidebound/      one folder per game, each self-contained
 games/mirror-mole/
 ```
 
-To add a game, create `games/<name>/index.html` and add a card to the root `index.html`.
+To add a game, create `games/HarithaKongi/index.html` and add a card to the root `index.html`.
 
 ## Run locally
 
