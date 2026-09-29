@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidebound</title>
+<style>
+:root{--bg:#d6ecea;--ink:#1b2a41;--sea:#3a86b4;--sun:#f4c430;--rose:#d93f6b;--cell:#f3fbfa;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1b2b;--ink:#e3f1f0;--cell:#1b2a41}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.5 "Trebuchet MS",Verdana,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px 12px}
+h1{font-size:2rem;margin:0 0 4px;letter-spacing:-.02em}
+p{margin:4px 0;max-width:34rem;text-align:center}
+nav{display:flex;gap:8px;margin:14px 0}
+button{font:inherit;border:2px solid var(--ink);background:var(--cell);color:var(--ink);padding:8px 14px;border-radius:10px;cursor:pointer}
+button:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+button.on{background:var(--sun);color:#1b2a41;font-weight:700}
+#board{display:grid;gap:3px;padding:6px;border:3px solid var(--ink);border-radius:14px;background:var(--ink);margin:10px 0}
+.c{width:min(11vw,52px);height:min(11vw,52px);background:var(--cell);display:grid;place-items:center;font-size:min(7vw,30px);border-radius:6px;position:relative}
+.w{background:var(--sea)}
+.wall{background:var(--ink);border:1px solid var(--cell)}
+.ex{outline:3px dashed var(--rose);outline-offset:-4px}
+.ok{background:var(--sun)}
+#status{font-weight:700;min-height:1.6em}
+#pad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:8px}
+#pad button{height:52px;font-size:1.3rem}
+nav a{color:inherit;font-weight:700}
+</style>
+</head>
+<body>
+<h1>Tidebound</h1>
+<nav><a href="../../">&larr; All games</a></nav>
+<p id="rules"></p>
+<div id="status" role="status" aria-live="polite"></div>
+<div id="board" aria-label="Game board"></div>
+<div id="pad">
+  <span></span><button data-d="0,-1" aria-label="Up">&uarr;</button><span></span>
+  <button data-d="-1,0" aria-label="Left">&larr;</button><button data-d="0,1" aria-label="Down">&darr;</button><button data-d="1,0" aria-label="Right">&rarr;</button>
+</div>
+<button id="reset" style="margin-top:14px">Restart</button>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id), board = $("board"), status = $("status");
+let G = {};
+
+/* ---------- Tidebound: collect pearls before the tide climbs ---------- */
+const N = 7, TIDE_EVERY = 3, PEARLS = 4;
+function newTide() {
+  const taken = new Set(), pick = (ymin, ymax) => {
+    for (;;) { const x = Math.floor(Math.random() * N), y = ymin + Math.floor(Math.random() * (ymax - ymin + 1)), k = x + "," + y;
+      if (!taken.has(k) && k !== "3,6") { taken.add(k); return [x, y]; } } };
+  G = { crab: [3, 6], moves: 0, tide: 0, got: 0, over: false,
+        pearls: Array.from({ length: PEARLS }, () => pick(0, 2)), rocks: Array.from({ length: 5 }, () => pick(1, 5)) };
+  $("rules").textContent = "Collect all " + PEARLS + " pearls. Every " + TIDE_EVERY + " moves the sea rises one row. Stay dry.";
+  drawTide();
+}
+function drawTide() {
+  board.style.gridTemplateColumns = "repeat(" + N + ",auto)"; board.innerHTML = "";
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const d = document.createElement("div"); d.className = "c" + (y >= N - G.tide ? " w" : "");
+    if (G.rocks.some(r => r[0] === x && r[1] === y)) d.textContent = "\u{1FAA8}";
+    else if (G.pearls.some(p => p[0] === x && p[1] === y)) d.textContent = "\u26AA";
+    if (G.crab[0] === x && G.crab[1] === y) d.textContent = "\u{1F980}";
+    board.appendChild(d);
+  }
+  if (!G.over) status.textContent = "Pearls " + G.got + "/" + PEARLS + " \u2022 Next tide in " + (TIDE_EVERY - G.moves % TIDE_EVERY) + " moves";
+}
+function moveTide(dx, dy) {
+  if (G.over) return;
+  const x = G.crab[0] + dx, y = G.crab[1] + dy;
+  if (x < 0 || y < 0 || x >= N || y >= N || G.rocks.some(r => r[0] === x && r[1] === y)) return;
+  G.crab = [x, y]; G.moves++;
+  const i = G.pearls.findIndex(p => p[0] === x && p[1] === y);
+  if (i > -1) { G.pearls.splice(i, 1); G.got++; }
+  if (G.moves % TIDE_EVERY === 0) G.tide++;
+  if (G.got === PEARLS) { G.over = true; drawTide(); status.textContent = "You win in " + G.moves + " moves!"; return; }
+  if (G.crab[1] >= N - G.tide) { G.over = true; drawTide(); status.textContent = "Swept away. Press Restart for a new tide."; return; }
+  drawTide();
+}
+
+/* ---------- Shared wiring ---------- */
+function start() { newTide(); }
+function move(dx, dy) { moveTide(dx, dy); }
+$("reset").onclick = start;
+document.querySelectorAll("#pad button").forEach(b => b.onclick = () => move(...b.dataset.d.split(",").map(Number)));
+const keys = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
+addEventListener("keydown", e => { const k = keys[e.key]; if (k) { e.preventDefault(); move(...k); } });
+start();
+</script>
+</body>
+</html>
